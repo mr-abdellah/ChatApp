@@ -25,9 +25,6 @@ export default function MessageItem({
     });
   };
 
-  // Debug log to check message ownership
-  console.log("Message:", message.username, "IsOwn:", isOwnMessage);
-
   return (
     <View
       className={`mb-4 flex-row ${isOwnMessage ? "justify-end" : "justify-start"}`}

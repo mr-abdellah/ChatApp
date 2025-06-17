@@ -1,7 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MessageInput from "../../components/MessageInput";
 import MessageItem from "../../components/MessageItem";
@@ -85,7 +92,11 @@ export default function ChatScreen() {
             onPress={() => router.push("/(app)/profile")}
             className="p-2 rounded-full bg-gray-100"
           >
-            <Ionicons name="person-outline" size={20} color="#374151" />
+            {user?.avatar ? (
+              <Image src={user?.avatar || ""} width={20} height={20} />
+            ) : (
+              <Ionicons name="person-outline" size={20} color="#374151" />
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSignOut}
