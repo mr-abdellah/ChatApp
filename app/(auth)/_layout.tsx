@@ -1,21 +1,26 @@
 import { Redirect, Stack } from "expo-router";
-import { Text, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function AuthLayout() {
-  const { user, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <Text className="text-lg">Loading...</Text>
+        <ActivityIndicator size="large" color="#3B82F6" />
       </View>
     );
   }
 
-  if (user) {
-    return <Redirect href="/(app)/index" />;
+  if (isAuthenticated) {
+    return <Redirect href="/(app)/chat" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="login" />
+      <Stack.Screen name="register" />
+    </Stack>
+  );
 }

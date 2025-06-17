@@ -25,10 +25,15 @@ export default function MessageItem({
     });
   };
 
+  // Debug log to check message ownership
+  console.log("Message:", message.username, "IsOwn:", isOwnMessage);
+
   return (
-    <View className={`mb-4 ${isOwnMessage ? "items-end" : "items-start"}`}>
+    <View
+      className={`mb-4 flex-row ${isOwnMessage ? "justify-end" : "justify-start"}`}
+    >
       <View
-        className={`max-w-xs px-4 py-2 rounded-lg ${
+        className={`max-w-[80%] px-4 py-2 rounded-lg ${
           isOwnMessage
             ? "bg-blue-600 rounded-br-sm"
             : "bg-gray-200 rounded-bl-sm"

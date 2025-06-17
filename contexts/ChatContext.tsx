@@ -1,7 +1,7 @@
 import Pusher from "pusher-js/react-native";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { apiService } from "../services/api";
 import { ChatContextType, FileData, Message } from "../types";
-import { ApiClient } from "../utils/api";
 import { useAuth } from "./AuthContext";
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -13,10 +13,10 @@ const pusher = new Pusher("6696c0d8b9223131e338", {
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && user) {
       loadMessages();
       setupPusherSubscription();
     }
@@ -24,12 +24,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     return () => {
       pusher.unsubscribe("chat-channel");
     };
-  }, [user]);
+  }, [isAuthenticated, user]);
 
   const loadMessages = async () => {
     try {
       setIsLoading(true);
-      const fetchedMessages = await ApiClient.getMessages();
+      const fetchedMessages = await apiService.getMessages();
       setMessages(fetchedMessages);
     } catch (error) {
       console.error("Error loading messages:", error);
@@ -40,7 +40,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const setupPusherSubscription = () => {
     const channel = pusher.subscribe("chat-channel");
-
     channel.bind("new-message", (data: Message) => {
       setMessages((prev) => [...prev, data]);
     });
@@ -50,7 +49,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (!user || !messageText.trim()) return;
 
     try {
-      await ApiClient.sendMessage(user.username, messageText.trim());
+      await apiService.sendMessage(user.username, messageText.trim());
     } catch (error) {
       console.error("Error sending message:", error);
       throw error;
@@ -61,25 +60,21 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     try {
-      await ApiClient.sendFileMessage(user.username, file, messageText);
+      await apiService.sendFileMessage(user.username, file, messageText);
     } catch (error) {
       console.error("Error sending file message:", error);
       throw error;
     }
   };
 
-  return (
-    <ChatContext.Provider
-      value={{
-        messages,
-        sendMessage,
-        sendFileMessage,
-        isLoading,
-      }}
-    >
-      {children}
-    </ChatContext.Provider>
-  );
+  const value: ChatContextType = {
+    messages,
+    sendMessage,
+    sendFileMessage,
+    isLoading,
+  };
+
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
 
 export function useChat() {

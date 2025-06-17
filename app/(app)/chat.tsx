@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import { Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,7 +10,7 @@ import { useChat } from "../../contexts/ChatContext";
 import { Message } from "../../types";
 
 export default function ChatScreen() {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { messages, isLoading } = useChat();
   const flatListRef = useRef<FlatList>(null);
 
@@ -30,52 +32,75 @@ export default function ChatScreen() {
       {
         text: "Sign Out",
         style: "destructive",
-        onPress: signOut,
+        onPress: logout,
       },
     ]);
   };
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <MessageItem
-      message={item}
-      isOwnMessage={item.username === user?.username}
-    />
-  );
+  const renderMessage = ({ item }: { item: Message }) => {
+    // More robust username comparison
+    const isOwnMessage =
+      user?.username && item.username
+        ? item.username.toLowerCase().trim() ===
+          user.username.toLowerCase().trim()
+        : false;
+
+    // Debug log
+    console.log("Rendering message:", {
+      messageUser: item.username,
+      currentUser: user?.username,
+      isOwn: isOwnMessage,
+    });
+
+    return <MessageItem message={item} isOwnMessage={isOwnMessage} />;
+  };
 
   const renderEmptyState = () => (
-    <View className="flex-1 justify-center items-center px-8">
-      <Text className="text-gray-500 text-center text-lg mb-2">
+    <View className="flex-1 justify-center items-center p-8">
+      <Ionicons name="chatbubbles-outline" size={64} color="#9CA3AF" />
+      <Text className="text-lg font-semibold text-gray-700 mt-4">
         No messages yet
       </Text>
-      <Text className="text-gray-400 text-center">
+      <Text className="text-gray-500 text-center mt-2">
         Start the conversation by sending your first message!
       </Text>
     </View>
   );
 
+  // Debug current user
+  console.log("Current user:", user);
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row justify-between items-center p-4 bg-blue-600 shadow-sm">
+      <View className="flex-row justify-between items-center px-4 py-3 border-b border-gray-200">
         <View>
-          <Text className="text-white text-lg font-semibold">Chat Room</Text>
-          <Text className="text-blue-100 text-sm" selectable>
-            Welcome, {user?.username}
+          <Text className="text-lg font-semibold text-gray-900">Chat Room</Text>
+          <Text className="text-sm text-gray-600">
+            Welcome, {user?.username || "Guest"}
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={handleSignOut}
-          className="bg-blue-700 px-3 py-2 rounded-lg"
-        >
-          <Text className="text-white font-medium">Sign Out</Text>
-        </TouchableOpacity>
+        <View className="flex-row space-x-2">
+          <TouchableOpacity
+            onPress={() => router.push("/(app)/profile")}
+            className="p-2 rounded-full bg-gray-100"
+          >
+            <Ionicons name="person-outline" size={20} color="#374151" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleSignOut}
+            className="p-2 rounded-full bg-red-100"
+          >
+            <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Messages Container */}
-      <View className="flex-1 bg-white">
+      <View className="flex-1">
         {isLoading ? (
           <View className="flex-1 justify-center items-center">
-            <Text className="text-gray-500 text-lg">Loading messages...</Text>
+            <Text className="text-gray-500">Loading messages...</Text>
           </View>
         ) : (
           <FlatList
@@ -94,6 +119,8 @@ export default function ChatScreen() {
                 flatListRef.current?.scrollToEnd({ animated: false });
               }
             }}
+            // Add inverted prop if messages appear in wrong order
+            // inverted={false}
           />
         )}
       </View>

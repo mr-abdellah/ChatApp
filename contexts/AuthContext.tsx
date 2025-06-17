@@ -1,12 +1,27 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { AuthContextType, User } from "../types";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import Toast from "react-native-toast-message";
+import { apiService } from "../services/api";
+import { StorageService } from "../services/storage";
+import { AuthContextType, LoginData, RegisterData, User } from "../types";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isAuthenticated = !!user && !!token;
 
   useEffect(() => {
     loadStoredAuth();
@@ -14,9 +29,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadStoredAuth = async () => {
     try {
-      const storedUser = await AsyncStorage.getItem("user");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+      const [storedToken, storedUser] = await Promise.all([
+        StorageService.getToken(),
+        StorageService.getUser(),
+      ]);
+
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(storedUser);
       }
     } catch (error) {
       console.error("Error loading stored auth:", error);
@@ -25,38 +45,114 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signIn = async (username: string) => {
+  const login = async (data: LoginData) => {
     try {
-      const userData: User = {
-        id: Date.now().toString(),
-        username: username.trim(),
-      };
+      setIsLoading(true);
+      const response = await apiService.login(data);
 
-      await AsyncStorage.setItem("user", JSON.stringify(userData));
-      setUser(userData);
-    } catch (error) {
-      console.error("Error signing in:", error);
+      if (response.success && response.data) {
+        const { user: userData, token: authToken } = response.data;
+
+        // Store securely
+        await Promise.all([
+          StorageService.saveToken(authToken),
+          StorageService.saveUser(userData),
+        ]);
+
+        setToken(authToken);
+        setUser(userData);
+
+        Toast.show({
+          type: "success",
+          text1: "Login Successful",
+          text2: `Welcome back, ${userData.username}!`,
+        });
+      } else {
+        throw new Error(response.message || "Login failed");
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Login failed";
+      Toast.show({
+        type: "error",
+        text1: "Login Failed",
+        text2: errorMessage,
+      });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const signOut = async () => {
+  const register = async (data: RegisterData) => {
     try {
-      await AsyncStorage.removeItem("user");
-      setUser(null);
-    } catch (error) {
-      console.error("Error signing out:", error);
+      setIsLoading(true);
+      const response = await apiService.register(data);
+
+      if (response.success && response.data) {
+        const { user: userData, token: authToken } = response.data;
+
+        // Store securely
+        await Promise.all([
+          StorageService.saveToken(authToken),
+          StorageService.saveUser(userData),
+        ]);
+
+        setToken(authToken);
+        setUser(userData);
+
+        Toast.show({
+          type: "success",
+          text1: "Registration Successful",
+          text2: `Welcome, ${userData.username}!`,
+        });
+      } else {
+        throw new Error(response.message || "Registration failed");
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Registration failed";
+      Toast.show({
+        type: "error",
+        text1: "Registration Failed",
+        text2: errorMessage,
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ user, signIn, signOut, isLoading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const logout = async () => {
+    try {
+      await StorageService.clearAll();
+      setToken(null);
+      setUser(null);
+
+      Toast.show({
+        type: "info",
+        text1: "Logged Out",
+        text2: "You have been successfully logged out",
+      });
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    token,
+    login,
+    register,
+    logout,
+    isLoading,
+    isAuthenticated,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
