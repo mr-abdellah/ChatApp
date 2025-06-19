@@ -1,7 +1,4 @@
-// (app)/friends/index.tsx (COMPLETE UPDATE)
-import Button from "@/components/ui/Button";
-import { useFriend } from "@/contexts/FriendContext";
-import { Friend } from "@/types";
+// (app)/(app)/friends/index.tsx (COMPLETE UPDATE)
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect } from "react";
@@ -9,11 +6,14 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  SafeAreaView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "../../../components/ui/Button";
+import { useFriend } from "../../../contexts/FriendContext";
+import { Friend } from "../../../types";
 
 export default function FriendsScreen() {
   const {
@@ -30,7 +30,9 @@ export default function FriendsScreen() {
   }, []);
 
   const handleStartChat = (friend: Friend) => {
-    router.push(`/(app)/chat/private/${friend.id}?username=${friend.username}`);
+    router.push(
+      `/(app)/chat/private/${friend.id}?username=${friend.username}&isOnline=${friend.isOnline}&lastSeen=${friend.lastSeen}`
+    );
   };
 
   const formatLastSeen = (lastSeen: string) => {
@@ -43,11 +45,16 @@ export default function FriendsScreen() {
     if (diffInMinutes < 1) return "Just now";
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    if (diffInMinutes < 10080)
+      return `${Math.floor(diffInMinutes / 1440)}d ago`;
     return date.toLocaleDateString();
   };
 
   const renderFriendItem = ({ item }: { item: Friend }) => (
-    <View className="flex-row items-center p-4 bg-white rounded-lg mb-3 shadow-sm">
+    <TouchableOpacity
+      onPress={() => handleStartChat(item)}
+      className="flex-row items-center p-4 bg-white rounded-lg mb-3 shadow-sm"
+    >
       <View className="relative mr-3">
         <View className="w-12 h-12 rounded-full bg-gray-200 items-center justify-center">
           {item.avatar ? (
@@ -78,9 +85,13 @@ export default function FriendsScreen() {
           </Text>
         )}
         <Text className="text-xs text-gray-400 mt-1">
-          {item.isOnline
-            ? "Online"
-            : `Last seen ${formatLastSeen(item.lastSeen)}`}
+          {item.isOnline ? (
+            <Text className="text-green-600 font-medium">● Online</Text>
+          ) : (
+            <Text className="text-gray-500">
+              Last seen {formatLastSeen(item.lastSeen)}
+            </Text>
+          )}
         </Text>
         <Text className="text-xs text-gray-400">
           Friends since{" "}
@@ -88,13 +99,16 @@ export default function FriendsScreen() {
         </Text>
       </View>
 
-      <TouchableOpacity
-        onPress={() => handleStartChat(item)}
-        className="p-3 rounded-full bg-blue-100"
-      >
-        <Ionicons name="chatbubble" size={20} color="#3B82F6" />
-      </TouchableOpacity>
-    </View>
+      <View className="items-center">
+        <TouchableOpacity
+          onPress={() => handleStartChat(item)}
+          className="p-3 rounded-full bg-blue-100 mb-2"
+        >
+          <Ionicons name="chatbubble" size={20} color="#3B82F6" />
+        </TouchableOpacity>
+        <Text className="text-xs text-gray-500">Chat</Text>
+      </View>
+    </TouchableOpacity>
   );
 
   const renderEmptyState = () => (
@@ -116,14 +130,10 @@ export default function FriendsScreen() {
     <SafeAreaView className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="flex-row items-center p-4 bg-white border-b border-gray-200">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 rounded-full bg-gray-100 mr-3"
-        >
-          <Ionicons name="arrow-back" size={20} color="#374151" />
-        </TouchableOpacity>
-        <Text className="text-xl font-bold text-gray-900">My Friends</Text>
-        <View className="ml-auto flex-row space-x-2">
+        <Text className="text-xl font-bold text-gray-900 flex-1">
+          My Friends
+        </Text>
+        <View className="flex-row space-x-2">
           <TouchableOpacity
             onPress={() => router.push("/(app)/friends/requests")}
             className="p-2 rounded-full bg-gray-100 relative"

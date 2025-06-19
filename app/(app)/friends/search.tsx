@@ -3,18 +3,17 @@ import Button from "@/components/ui/Button";
 import { useFriend } from "@/contexts/FriendContext";
 import { SearchUser } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  SafeAreaView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SearchUsersScreen() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,17 +91,6 @@ export default function SearchUsersScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="flex-row items-center p-4 bg-white border-b border-gray-200">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 rounded-full bg-gray-100 mr-3"
-        >
-          <Ionicons name="arrow-back" size={20} color="#374151" />
-        </TouchableOpacity>
-        <Text className="text-xl font-bold text-gray-900">Find Friends</Text>
-      </View>
-
       {/* Search Input */}
       <View className="p-4 bg-white border-b border-gray-200">
         <View className="flex-row items-center bg-gray-100 rounded-lg px-4 py-3">

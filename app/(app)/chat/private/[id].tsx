@@ -1,9 +1,4 @@
-// (app)/chat/private/[id].tsx (COMPLETE UPDATE)
-import MessageInput from "@/components/MessageInput";
-import MessageItem from "@/components/MessageItem";
-import { useAuth } from "@/contexts/AuthContext";
-import { useChat } from "@/contexts/ChatContext";
-import { Message } from "@/types";
+// (app)/(app)/chat/private/[id].tsx (COMPLETE UPDATE)
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -15,11 +10,18 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import MessageInput from "../../../../components/MessageInput";
+import MessageItem from "../../../../components/MessageItem";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { useChat } from "../../../../contexts/ChatContext";
+import { Message } from "../../../../types";
 
 export default function PrivateChatScreen() {
-  const { id, username } = useLocalSearchParams<{
+  const { id, username, isOnline, lastSeen } = useLocalSearchParams<{
     id: string;
     username: string;
+    isOnline: string;
+    lastSeen: string;
   }>();
   const { user } = useAuth();
   const {
@@ -29,14 +31,13 @@ export default function PrivateChatScreen() {
   } = useChat();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [friendIsOnline, setFriendIsOnline] = useState(isOnline === "true");
   const flatListRef = useRef<FlatList>(null);
 
   const friendId = parseInt(id);
 
   useEffect(() => {
     loadPrivateMessages();
-
-    // Subscribe to real-time updates
     subscribeToPrivateChannel(friendId);
   }, [friendId]);
 
@@ -65,6 +66,20 @@ export default function PrivateChatScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatLastSeen = (lastSeenStr: string) => {
+    if (!lastSeenStr) return "";
+    const date = new Date(lastSeenStr);
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return date.toLocaleDateString();
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -98,14 +113,28 @@ export default function PrivateChatScreen() {
         </TouchableOpacity>
 
         <View className="flex-1 flex-row items-center">
-          <View className="w-10 h-10 rounded-full bg-gray-200 items-center justify-center mr-3">
-            <Ionicons name="person" size={20} color="#6B7280" />
+          <View className="relative mr-3">
+            <View className="w-10 h-10 rounded-full bg-gray-200 items-center justify-center">
+              <Ionicons name="person" size={20} color="#6B7280" />
+            </View>
+            {/* Online Status Indicator */}
+            <View
+              className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                friendIsOnline ? "bg-green-500" : "bg-gray-400"
+              }`}
+            />
           </View>
           <View>
             <Text className="text-lg font-semibold text-gray-900">
               {username}
             </Text>
-            <Text className="text-sm text-green-500">● Online</Text>
+            <Text
+              className={`text-sm ${friendIsOnline ? "text-green-600" : "text-gray-500"}`}
+            >
+              {friendIsOnline
+                ? "● Online"
+                : `Last seen ${formatLastSeen(lastSeen)}`}
+            </Text>
           </View>
         </View>
 

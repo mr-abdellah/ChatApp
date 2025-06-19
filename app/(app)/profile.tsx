@@ -4,12 +4,12 @@ import React, { useState } from "react";
 import {
   Alert,
   Image,
+  SafeAreaView,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import AvatarPicker from "../../components/auth/AvatarPicker";
 import Button from "../../components/ui/Button";
