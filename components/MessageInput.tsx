@@ -1,3 +1,4 @@
+// components/MessageInput.tsx
 import { AudioModule, RecordingPresets, useAudioRecorder } from "expo-audio";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -14,14 +15,17 @@ import { useChat } from "../contexts/ChatContext";
 import { FileData } from "../types";
 import FilePicker from "./FilePicker";
 
-export default function MessageInput() {
+interface MessageInputProps {
+  receiverId?: number; // Add receiverId prop for private messaging
+}
+
+export default function MessageInput({ receiverId }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const { sendMessage, sendFileMessage } = useChat();
 
@@ -47,14 +51,16 @@ export default function MessageInput() {
 
     try {
       setIsSending(true);
-
       if (selectedFile) {
-        await sendFileMessage(selectedFile, message.trim() || undefined);
+        await sendFileMessage(
+          selectedFile,
+          message.trim() || undefined,
+          receiverId
+        );
         setSelectedFile(null);
       } else {
-        await sendMessage(message);
+        await sendMessage(message, receiverId);
       }
-
       setMessage("");
     } catch (error) {
       Alert.alert("Error", "Failed to send message. Please try again.");
@@ -147,9 +153,9 @@ export default function MessageInput() {
           type: "audio/mp4",
           size: undefined,
         };
-        console.log("file", file);
+
         setIsSending(true);
-        await sendFileMessage(file);
+        await sendFileMessage(file, undefined, receiverId);
       }
     } catch (error) {
       console.log("Failed to stop recording:", error);
@@ -176,7 +182,6 @@ export default function MessageInput() {
   const resetRecordingState = () => {
     setIsRecording(false);
     setRecordingDuration(0);
-
     if (recordingTimer.current) {
       clearInterval(recordingTimer.current);
       recordingTimer.current = null;
@@ -224,8 +229,8 @@ export default function MessageInput() {
     const isAudio = selectedFile.type.startsWith("audio/");
 
     return (
-      <View className="p-3 bg-blue-50 border-t border-blue-200">
-        <View className="flex-row items-center">
+      <View className="p-3 bg-gray-100 border-t border-gray-200">
+        <View className="flex-row items-center bg-white rounded-lg p-3">
           {isImage && (
             <Image
               source={{ uri: selectedFile.uri }}
@@ -235,11 +240,11 @@ export default function MessageInput() {
           )}
 
           <View className="flex-1">
-            <Text className="text-blue-800 font-medium" numberOfLines={1}>
+            <Text className="font-medium text-gray-900 mb-1">
               {isImage ? "🖼️" : isVideo ? "🎥" : isAudio ? "🎵" : "📄"}{" "}
               {selectedFile.name}
             </Text>
-            <Text className="text-blue-600 text-sm">
+            <Text className="text-sm text-gray-500">
               {selectedFile.size
                 ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
                 : "Ready to send"}
@@ -248,9 +253,9 @@ export default function MessageInput() {
 
           <TouchableOpacity
             onPress={clearSelectedFile}
-            className="ml-2 p-1 bg-red-100 rounded-full"
+            className="p-2 rounded-full bg-red-100"
           >
-            <Text className="text-red-600 text-lg">✕</Text>
+            <Text className="text-red-600 font-bold">✕</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -261,20 +266,21 @@ export default function MessageInput() {
     if (!isRecording) return null;
 
     return (
-      <Animated.View
-        className="absolute inset-0 bg-black/50 flex-row items-center justify-center z-10"
-        style={{
-          opacity: slideAnim,
-        }}
-      >
-        <View className="bg-red-500 px-4 py-2 rounded-full flex-row items-center">
-          <View className="w-3 h-3 bg-white rounded-full mr-2" />
-          <Text className="text-white font-semibold">
+      <View className="absolute inset-0 bg-black bg-opacity-50 flex-1 justify-center items-center z-50">
+        <View className="bg-white rounded-xl p-6 mx-8 items-center">
+          <View className="w-20 h-20 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Text className="text-3xl">🎤</Text>
+          </View>
+
+          <Text className="text-lg font-semibold text-gray-900 mb-2">
             {formatDuration(recordingDuration)}
           </Text>
+
+          <Text className="text-sm text-gray-500 text-center">
+            ← Swipe to cancel
+          </Text>
         </View>
-        <Text className="text-white ml-4">← Swipe to cancel</Text>
-      </Animated.View>
+      </View>
     );
   };
 
@@ -283,66 +289,60 @@ export default function MessageInput() {
       {renderFilePreview()}
       {renderRecordingOverlay()}
 
-      <View
-        className="flex-row items-center p-4 bg-white border-t border-gray-200"
-        {...panResponder.panHandlers}
-      >
+      <View className="flex-row items-center p-4 bg-white border-t border-gray-200">
         {/* FILE BUTTON */}
         <TouchableOpacity
-          className={`mr-3 p-2 rounded-full ${selectedFile ? "bg-blue-100" : "bg-gray-100"}`}
           onPress={() => setShowFilePicker(true)}
           disabled={isSending || isRecording}
+          className="p-2 rounded-full bg-gray-100 mr-2"
         >
-          <Text
-            className={`text-xl ${selectedFile ? "text-blue-600" : "text-gray-600"}`}
-          >
-            📎
-          </Text>
+          <Text className="text-lg">📎</Text>
         </TouchableOpacity>
 
         {/* MIC BUTTON */}
-        <Animated.View
-          className="mr-3"
-          style={{ transform: [{ scale: scaleAnim }] }}
-        >
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
           <TouchableOpacity
-            className={`p-3 rounded-full items-center justify-center ${
-              isRecording ? "bg-red-500" : "bg-blue-500"
-            }`}
             onPressIn={startRecording}
             onPressOut={stopRecording}
             disabled={isSending}
+            className="p-2 rounded-full bg-blue-100 mr-2"
+            {...panResponder.panHandlers}
           >
-            <Text className="text-white text-xl">
-              {isRecording ? "🎤" : "🎙️"}
-            </Text>
+            <Text className="text-lg">{isRecording ? "🎤" : "🎙️"}</Text>
           </TouchableOpacity>
         </Animated.View>
 
         {/* TEXT INPUT */}
         <TextInput
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-full bg-gray-50 mr-3"
-          placeholder={selectedFile ? "Add a caption..." : "Type a message..."}
+          className="flex-1 border border-gray-300 rounded-full px-4 py-2 mr-2 max-h-24"
+          placeholder={
+            receiverId ? "Send a private message..." : "Type a message..."
+          }
           value={message}
           onChangeText={setMessage}
           multiline
-          maxLength={1000}
           editable={!isRecording}
         />
 
         {/* SEND BUTTON */}
         <TouchableOpacity
-          className={`px-6 py-2 rounded-full ${
-            (message.trim() || selectedFile) && !isSending
-              ? "bg-blue-600"
-              : "bg-gray-400"
-          }`}
           onPress={handleSend}
           disabled={
             (!message.trim() && !selectedFile) || isSending || isRecording
           }
+          className={`px-4 py-2 rounded-full ${
+            (!message.trim() && !selectedFile) || isSending || isRecording
+              ? "bg-gray-300"
+              : "bg-blue-500"
+          }`}
         >
-          <Text className="text-white font-semibold">
+          <Text
+            className={`font-medium ${
+              (!message.trim() && !selectedFile) || isSending || isRecording
+                ? "text-gray-500"
+                : "text-white"
+            }`}
+          >
             {isSending ? "Sending..." : "Send"}
           </Text>
         </TouchableOpacity>

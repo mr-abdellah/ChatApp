@@ -20,6 +20,12 @@ export default function AppLayout() {
   return (
     <Stack>
       <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="chat"
         options={{
           title: "Chat",
@@ -30,6 +36,12 @@ export default function AppLayout() {
         name="profile"
         options={{
           title: "Profile",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="friends"
+        options={{
           headerShown: false,
         }}
       />

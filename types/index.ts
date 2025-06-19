@@ -53,8 +53,15 @@ export interface AuthContextType {
 
 export interface ChatContextType {
   messages: Message[];
-  sendMessage: (message: string) => Promise<void>;
-  sendFileMessage: (file: FileData, message?: string) => Promise<void>;
+  sendMessage: (message: string, receiverId?: number) => Promise<void>;
+  sendFileMessage: (
+    file: FileData,
+    message?: string,
+    receiverId?: number
+  ) => Promise<void>;
+  getPrivateMessages: (friendId: number) => Promise<Message[]>;
+  getPrivateMessagesFromCache: (friendId: number) => Message[];
+  subscribeToPrivateChannel: (friendId: number) => void;
   isLoading: boolean;
 }
 export interface FileData {
@@ -62,4 +69,63 @@ export interface FileData {
   name: string;
   type: string;
   size?: number;
+}
+// types/index.ts (additions)
+export interface FriendRequest {
+  id: number;
+  senderId: number;
+  receiverId: number;
+  status: "pending" | "accepted" | "rejected";
+  createdAt: string;
+  updatedAt: string;
+  Sender?: User;
+  Receiver?: User;
+}
+
+export interface Friend {
+  id: number;
+  username: string;
+  email: string;
+  avatar?: string;
+  bio?: string;
+  createdAt: string;
+  friendshipCreatedAt: string;
+}
+
+export interface SearchUser {
+  id: number;
+  username: string;
+  email: string;
+  avatar?: string;
+  bio?: string;
+  createdAt: string;
+}
+
+// Update Message interface to support private messaging
+export interface Message {
+  id: number;
+  senderId: number;
+  receiverId?: number;
+  username: string;
+  message: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileType?: "image" | "video" | "document" | "audio" | null;
+  fileSize?: number | null;
+  isPrivate: boolean;
+  createdAt: string;
+}
+
+export interface FriendContextType {
+  friends: Friend[];
+  pendingRequests: FriendRequest[];
+  searchResults: SearchUser[];
+  isLoading: boolean;
+  searchUsers: (query: string) => Promise<void>;
+  sendFriendRequest: (userId: number) => Promise<void>;
+  acceptFriendRequest: (requestId: number) => Promise<void>;
+  rejectFriendRequest: (requestId: number) => Promise<void>;
+  loadFriends: () => Promise<void>;
+  loadPendingRequests: () => Promise<void>;
+  clearSearchResults: () => void;
 }
