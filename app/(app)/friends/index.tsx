@@ -1,4 +1,4 @@
-// (app)/friends/index.tsx
+// (app)/friends/index.tsx (COMPLETE UPDATE)
 import Button from "@/components/ui/Button";
 import { useFriend } from "@/contexts/FriendContext";
 import { Friend } from "@/types";
@@ -33,17 +33,38 @@ export default function FriendsScreen() {
     router.push(`/(app)/chat/private/${friend.id}?username=${friend.username}`);
   };
 
+  const formatLastSeen = (lastSeen: string) => {
+    const date = new Date(lastSeen);
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return date.toLocaleDateString();
+  };
+
   const renderFriendItem = ({ item }: { item: Friend }) => (
     <View className="flex-row items-center p-4 bg-white rounded-lg mb-3 shadow-sm">
-      <View className="w-12 h-12 rounded-full bg-gray-200 items-center justify-center mr-3">
-        {item.avatar ? (
-          <Image
-            source={{ uri: item.avatar }}
-            className="w-12 h-12 rounded-full"
-          />
-        ) : (
-          <Ionicons name="person" size={24} color="#6B7280" />
-        )}
+      <View className="relative mr-3">
+        <View className="w-12 h-12 rounded-full bg-gray-200 items-center justify-center">
+          {item.avatar ? (
+            <Image
+              source={{ uri: item.avatar }}
+              className="w-12 h-12 rounded-full"
+            />
+          ) : (
+            <Ionicons name="person" size={24} color="#6B7280" />
+          )}
+        </View>
+        {/* Online Status Indicator */}
+        <View
+          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+            item.isOnline ? "bg-green-500" : "bg-gray-400"
+          }`}
+        />
       </View>
 
       <View className="flex-1">
@@ -57,6 +78,11 @@ export default function FriendsScreen() {
           </Text>
         )}
         <Text className="text-xs text-gray-400 mt-1">
+          {item.isOnline
+            ? "Online"
+            : `Last seen ${formatLastSeen(item.lastSeen)}`}
+        </Text>
+        <Text className="text-xs text-gray-400">
           Friends since{" "}
           {new Date(item.friendshipCreatedAt).toLocaleDateString()}
         </Text>
@@ -120,6 +146,14 @@ export default function FriendsScreen() {
         </View>
       </View>
 
+      {/* Online Friends Count */}
+      <View className="p-4 bg-white border-b border-gray-200">
+        <Text className="text-sm text-gray-600">
+          {friends.filter((f) => f.isOnline).length} of {friends.length} friends
+          online
+        </Text>
+      </View>
+
       {/* Friends List */}
       <View className="flex-1 p-4">
         {isLoading ? (
@@ -129,7 +163,12 @@ export default function FriendsScreen() {
           </View>
         ) : (
           <FlatList
-            data={friends}
+            data={friends.sort((a, b) => {
+              // Sort by online status first, then by name
+              if (a.isOnline && !b.isOnline) return -1;
+              if (!a.isOnline && b.isOnline) return 1;
+              return a.username.localeCompare(b.username);
+            })}
             renderItem={renderFriendItem}
             keyExtractor={(item) => item.id.toString()}
             ListEmptyComponent={renderEmptyState}

@@ -1,3 +1,4 @@
+// contexts/AuthContext.tsx (COMPLETE UPDATE)
 import React, {
   createContext,
   ReactNode,
@@ -27,6 +28,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loadStoredAuth();
   }, []);
 
+  // Update online status when app becomes active/inactive
+  useEffect(() => {
+    if (isAuthenticated) {
+      updateOnlineStatus(true);
+
+      // Set user offline when app is closed
+      const handleAppStateChange = () => {
+        updateOnlineStatus(false);
+      };
+
+      // Clean up on unmount
+      return () => {
+        updateOnlineStatus(false);
+      };
+    }
+  }, [isAuthenticated]);
+
   const loadStoredAuth = async () => {
     try {
       const [storedToken, storedUser] = await Promise.all([
@@ -37,6 +55,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(storedUser);
+        // Update online status when loading stored auth
+        await apiService.updateOnlineStatus(true);
       }
     } catch (error) {
       console.error("Error loading stored auth:", error);
@@ -123,8 +143,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const updateOnlineStatus = async (isOnline: boolean) => {
+    try {
+      if (isAuthenticated) {
+        await apiService.updateOnlineStatus(isOnline);
+        setUser((prev) =>
+          prev
+            ? { ...prev, isOnline, lastSeen: new Date().toISOString() }
+            : null
+        );
+      }
+    } catch (error) {
+      console.error("Error updating online status:", error);
+    }
+  };
+
   const logout = async () => {
     try {
+      // Update online status to false before logout
+      await apiService.logout();
       await StorageService.clearAll();
       setToken(null);
       setUser(null);
@@ -145,6 +182,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     register,
     logout,
+    updateOnlineStatus,
     isLoading,
     isAuthenticated,
   };

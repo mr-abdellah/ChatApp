@@ -4,6 +4,8 @@ export interface User {
   email: string;
   avatar?: string;
   bio?: string;
+  isOnline: boolean;
+  lastSeen: string;
   createdAt: string;
 }
 
@@ -47,6 +49,7 @@ export interface AuthContextType {
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  updateOnlineStatus: (isOnline: boolean) => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -88,6 +91,8 @@ export interface Friend {
   email: string;
   avatar?: string;
   bio?: string;
+  isOnline: boolean;
+  lastSeen: string;
   createdAt: string;
   friendshipCreatedAt: string;
 }
@@ -98,6 +103,8 @@ export interface SearchUser {
   email: string;
   avatar?: string;
   bio?: string;
+  isOnline: boolean;
+  lastSeen: string;
   createdAt: string;
 }
 

@@ -1,3 +1,4 @@
+// _layout.tsx (COMPLETE UPDATE)
 import { Stack } from "expo-router";
 import Toast from "react-native-toast-message";
 import { AuthProvider } from "../contexts/AuthContext";

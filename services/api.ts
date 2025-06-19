@@ -75,6 +75,14 @@ class ApiService {
     return response.data;
   }
 
+  async updateOnlineStatus(isOnline: boolean): Promise<void> {
+    await this.api.post("/auth/online-status", { isOnline });
+  }
+
+  async logout(): Promise<void> {
+    await this.api.post("/auth/logout");
+  }
+
   // Messages endpoints
   async getMessages(): Promise<Message[]> {
     const response = await this.api.get("/messages");
